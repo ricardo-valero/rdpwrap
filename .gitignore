@@ -44,3 +44,8 @@ src-x86-x64-Fusix/obj/
 
 # Local Claude Code config
 .claude/settings.local.json
+
+# Zig build outputs
+**/.zig-cache/
+**/zig-out/
+*.pdb
