@@ -39,3 +39,8 @@ src-csharp/RDPWInst/Resources/license.txt
 # C++ build outputs
 src-x86-x64-Fusix/Release/
 src-x86-x64-Fusix/obj/
+
+.direnv/
+
+# Local Claude Code config
+.claude/settings.local.json
