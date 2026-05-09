@@ -1,5 +1,4 @@
 // rdpwrap-cli — minimal RDP Wrapper installer.
-// Phase 1: arg parsing + verb skeletons. Real install logic lands incrementally.
 
 const std = @import("std");
 const Io = std.Io;
@@ -14,6 +13,7 @@ const Verb = enum { install, uninstall, update, status, help };
 pub fn main(init: std.process.Init) !void {
     const io = init.io;
     const arena = init.arena.allocator();
+    const gpa = init.gpa;
 
     var stderr_buf: [1024]u8 = undefined;
     var stderr = Io.File.stderr().writer(io, &stderr_buf);
@@ -33,7 +33,12 @@ pub fn main(init: std.process.Init) !void {
         std.process.exit(2);
     };
 
-    const ctx = Context{ .io = io, .arena = arena };
+    const ctx = Context{
+        .io = io,
+        .arena = arena,
+        .gpa = gpa,
+        .environ = init.environ_map,
+    };
     const rest = args[2..];
 
     switch (verb) {
@@ -49,6 +54,8 @@ pub fn main(init: std.process.Init) !void {
 pub const Context = struct {
     io: Io,
     arena: std.mem.Allocator,
+    gpa: std.mem.Allocator,
+    environ: *const std.process.Environ.Map,
 };
 
 fn parseVerb(s: []const u8) ?Verb {
@@ -72,16 +79,14 @@ fn printUsage(w: *Io.Writer) !void {
         \\rdpwrap-cli - minimal RDP Wrapper installer
         \\
         \\USAGE
-        \\  rdpwrap-cli <verb> [options]
+        \\  rdpwrap-cli install --dll <path> --ini <path> [--no-firewall]
+        \\  rdpwrap-cli uninstall [--keep-firewall]
+        \\  rdpwrap-cli update                              (Phase 3)
+        \\  rdpwrap-cli status                              (Phase 1.2)
+        \\  rdpwrap-cli help
         \\
-        \\VERBS
-        \\  install     Drop rdpwrap.dll, point TermService at it, open firewall
-        \\  uninstall   Restore termsrv.dll, close firewall
-        \\  update      Refresh INI; regenerate offsets if termsrv build is newer
-        \\  status      Print termsrv version, ServiceDll path, INI date
-        \\  help        Show this message
-        \\
-        \\Phase 1 ships skeletons; verbs are not yet implemented.
+        \\Defaults:
+        \\  install dir = %ProgramFiles%\RDP Wrapper
         \\
     );
 }
