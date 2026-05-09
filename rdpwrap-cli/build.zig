@@ -18,8 +18,6 @@ pub fn build(b: *std.Build) void {
             .optimize = optimize,
         }),
     });
-
-    // Single-binary release: no PDB / no debug info side-files in ReleaseSmall.
     b.installArtifact(exe);
 
     // `zig build run -- <args>` runs the binary on the host. Useful for the
@@ -29,4 +27,18 @@ pub fn build(b: *std.Build) void {
 
     const run_step = b.step("run", "Run the CLI");
     run_step.dependOn(&run.step);
+
+    // Tests run on the host (not the cross-compile target) so we can exercise
+    // pure-Zig modules like the INI parser without Wine.
+    const host_target = b.graph.host;
+    const ini_tests = b.addTest(.{
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("src/ini.zig"),
+            .target = host_target,
+            .optimize = optimize,
+        }),
+    });
+    const run_tests = b.addRunArtifact(ini_tests);
+    const test_step = b.step("test", "Run unit tests on the host");
+    test_step.dependOn(&run_tests.step);
 }
