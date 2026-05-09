@@ -10,9 +10,8 @@ manual procedure this replaces.
 
 ## Status
 
-**Scaffold only.** The CLI builds and dispatches verbs but no verb is
-implemented. Phase 1 will incrementally fill in `install`,
-`uninstall`, `update`, `status` against a known-good DLL/INI base.
+**Phase 1.1**: `install` and `uninstall` are implemented end-to-end.
+`update` and `status` are still stubs.
 
 ## Build
 
@@ -68,9 +67,9 @@ build.zig.zon      package metadata
 
 ## Roadmap
 
-- **Phase 1** (now): scaffold + cross-compile verified. **Done.**
-- **Phase 1.1**: implement `install` against a user-supplied DLL+INI on disk.
-- **Phase 1.2**: implement `uninstall`, `status`.
+- **Phase 1**: scaffold + cross-compile verified. **Done.**
+- **Phase 1.1**: implement `install` and `uninstall` against a user-supplied DLL+INI on disk. **Done.**
+- **Phase 1.2**: implement `status` (termsrv version, ServiceDll, INI date, INI coverage).
 - **Phase 2**: build the existing Fusix C++ DLL with `zig c++` so we ship our own `rdpwrap.dll`.
 - **Phase 3**: replace OffsetFinder with PDB-based offset resolution
   via Microsoft's public symbol server. Implement `update`.
