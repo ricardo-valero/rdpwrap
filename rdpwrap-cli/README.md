@@ -1,17 +1,29 @@
-# rdpwrap-cli
+# rdpwrap-cli + rdpwrap.dll
 
-Minimal RDP Wrapper installer in Zig. Cross-compiles from macOS (or any
-Zig host) to Windows x64. Single static binary, no .NET runtime, no
-PowerShell scripts at install time.
+Pure-Zig RDP Wrapper. Cross-compiles from macOS (or any Zig host) to
+Windows x64 in a single workspace. No .NET runtime, no PowerShell
+scripts at install time, no C/C++ in the hook DLL.
 
-This is the Phase 1 deliverable — see `docs/findings.md` and
-`docs/headless-install.md` at the repo root for the rationale and the
-manual procedure this replaces.
+Two artifacts produced by `zig build`:
+
+- **`rdpwrap-cli.exe`** — installer (`install` / `uninstall` / `update` / `status`).
+- **`rdpwrap.dll`** — the wrapper svchost loads in place of `termsrv.dll`.
+
+See `docs/findings.md` and `docs/headless-install.md` for the
+rationale and the manual procedure this replaces.
 
 ## Status
 
-**Phase 1.1**: `install` and `uninstall` are implemented end-to-end.
-`update` and `status` are still stubs.
+| Phase | Module | State |
+|---|---|---|
+| 1.1 | `rdpwrap-cli install` / `uninstall` | done |
+| 1.2 | `rdpwrap-cli status`                 | stub |
+| 2a  | INI parser (`src/ini.zig`)            | done |
+| 2b  | PE reader + patcher (`src/{pe,patcher}.zig`) | done |
+| 2c  | DLL skeleton (`src/dll_*.zig`) — DllMain + exports + forwarding | **this** |
+| 2d  | DLL patching pipeline (read INI, detect version, apply patches) | next |
+| 3   | `rdpwrap-cli update` + PDB-based offset finder | future |
+| 4   | ARM64, signing, native firewall/Defender APIs | future |
 
 ## Build
 
@@ -20,12 +32,15 @@ From this directory:
 
 ```sh
 zig build                                   # debug, default target = x86_64-windows-gnu
-zig build -Doptimize=ReleaseSmall           # ~430 KB exe
+zig build -Doptimize=ReleaseSmall           # ~458 KB exe + ~52 KB dll
 zig build -Dtarget=x86_64-windows-gnu       # explicit target
 zig build -Dtarget=aarch64-windows-gnu      # ARM64 (untested)
+zig build test                              # host-side unit tests
 ```
 
-Output: `zig-out/bin/rdpwrap-cli.exe`.
+Outputs:
+- `zig-out/bin/rdpwrap-cli.exe`
+- `zig-out/bin/rdpwrap.dll`
 
 ## Run on macOS host (sanity check)
 

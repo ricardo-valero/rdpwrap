@@ -188,3 +188,110 @@ pub const ERROR_SUCCESS: i32 = 0;
 // ── Misc kernel32 ────────────────────────────────────────────────────────
 
 pub extern "kernel32" fn Sleep(dwMilliseconds: DWORD) callconv(.winapi) void;
+
+// ── Module loading and dynamic resolution ────────────────────────────────
+// https://learn.microsoft.com/en-us/windows/win32/api/libloaderapi/
+
+pub const HMODULE = ?*opaque {};
+pub const FARPROC = *const opaque {};
+
+pub extern "kernel32" fn LoadLibraryW(lpLibFileName: LPCWSTR) callconv(.winapi) HMODULE;
+pub extern "kernel32" fn GetProcAddress(
+    hModule: HMODULE,
+    lpProcName: [*:0]const u8,
+) callconv(.winapi) ?FARPROC;
+pub extern "kernel32" fn GetModuleFileNameW(
+    hModule: HMODULE,
+    lpFilename: LPWSTR,
+    nSize: DWORD,
+) callconv(.winapi) DWORD;
+
+// ── Memory protection ────────────────────────────────────────────────────
+// https://learn.microsoft.com/en-us/windows/win32/api/memoryapi/nf-memoryapi-virtualprotect
+
+pub const PAGE_EXECUTE: DWORD = 0x10;
+pub const PAGE_EXECUTE_READ: DWORD = 0x20;
+pub const PAGE_EXECUTE_READWRITE: DWORD = 0x40;
+pub const PAGE_READWRITE: DWORD = 0x04;
+
+pub extern "kernel32" fn VirtualProtect(
+    lpAddress: ?*anyopaque,
+    dwSize: usize,
+    flNewProtect: DWORD,
+    lpflOldProtect: LPDWORD,
+) callconv(.winapi) BOOL;
+
+// ── File I/O for the rdpwrap.txt log ─────────────────────────────────────
+// https://learn.microsoft.com/en-us/windows/win32/api/fileapi/
+
+pub const GENERIC_WRITE: DWORD = 0x40000000;
+pub const FILE_SHARE_READ: DWORD = 0x00000001;
+pub const FILE_SHARE_WRITE: DWORD = 0x00000002;
+pub const OPEN_ALWAYS: DWORD = 4;
+pub const FILE_ATTRIBUTE_NORMAL: DWORD = 0x80;
+pub const FILE_END: DWORD = 2;
+pub const INVALID_HANDLE_VALUE: HANDLE = @ptrFromInt(@as(usize, @bitCast(@as(isize, -1))));
+pub const INVALID_FILE_SIZE: DWORD = 0xFFFFFFFF;
+
+pub extern "kernel32" fn CreateFileW(
+    lpFileName: LPCWSTR,
+    dwDesiredAccess: DWORD,
+    dwShareMode: DWORD,
+    lpSecurityAttributes: ?*anyopaque,
+    dwCreationDisposition: DWORD,
+    dwFlagsAndAttributes: DWORD,
+    hTemplateFile: ?HANDLE,
+) callconv(.winapi) HANDLE;
+
+pub extern "kernel32" fn WriteFile(
+    hFile: HANDLE,
+    lpBuffer: [*]const u8,
+    nNumberOfBytesToWrite: DWORD,
+    lpNumberOfBytesWritten: LPDWORD,
+    lpOverlapped: ?*anyopaque,
+) callconv(.winapi) BOOL;
+
+pub extern "kernel32" fn SetFilePointer(
+    hFile: HANDLE,
+    lDistanceToMove: i32,
+    lpDistanceToMoveHigh: ?*i32,
+    dwMoveMethod: DWORD,
+) callconv(.winapi) DWORD;
+
+// ── version.dll: read termsrv.dll ProductVersion ─────────────────────────
+// https://learn.microsoft.com/en-us/windows/win32/api/winver/
+
+pub extern "version" fn GetFileVersionInfoSizeW(
+    lptstrFilename: LPCWSTR,
+    lpdwHandle: ?LPDWORD,
+) callconv(.winapi) DWORD;
+
+pub extern "version" fn GetFileVersionInfoW(
+    lptstrFilename: LPCWSTR,
+    dwHandle: DWORD,
+    dwLen: DWORD,
+    lpData: ?*anyopaque,
+) callconv(.winapi) BOOL;
+
+pub extern "version" fn VerQueryValueW(
+    pBlock: ?*const anyopaque,
+    lpSubBlock: LPCWSTR,
+    lplpBuffer: *?*anyopaque,
+    puLen: *u32,
+) callconv(.winapi) BOOL;
+
+pub const VS_FIXEDFILEINFO = extern struct {
+    dwSignature: u32,
+    dwStrucVersion: u32,
+    dwFileVersionMS: u32,
+    dwFileVersionLS: u32,
+    dwProductVersionMS: u32,
+    dwProductVersionLS: u32,
+    dwFileFlagsMask: u32,
+    dwFileFlags: u32,
+    dwFileOS: u32,
+    dwFileType: u32,
+    dwFileSubtype: u32,
+    dwFileDateMS: u32,
+    dwFileDateLS: u32,
+};
