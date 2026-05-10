@@ -29,16 +29,26 @@ pub fn build(b: *std.Build) void {
     run_step.dependOn(&run.step);
 
     // Tests run on the host (not the cross-compile target) so we can exercise
-    // pure-Zig modules like the INI parser without Wine.
+    // pure-Zig modules like the INI parser, PE reader, and patcher without
+    // Wine. Each module is its own test root so a failure in one doesn't mask
+    // another.
     const host_target = b.graph.host;
-    const ini_tests = b.addTest(.{
-        .root_module = b.createModule(.{
-            .root_source_file = b.path("src/ini.zig"),
-            .target = host_target,
-            .optimize = optimize,
-        }),
-    });
-    const run_tests = b.addRunArtifact(ini_tests);
     const test_step = b.step("test", "Run unit tests on the host");
-    test_step.dependOn(&run_tests.step);
+
+    const test_modules = [_][]const u8{
+        "src/ini.zig",
+        "src/pe.zig",
+        "src/patcher.zig",
+    };
+    for (test_modules) |path| {
+        const t = b.addTest(.{
+            .root_module = b.createModule(.{
+                .root_source_file = b.path(path),
+                .target = host_target,
+                .optimize = optimize,
+            }),
+        });
+        const run_t = b.addRunArtifact(t);
+        test_step.dependOn(&run_t.step);
+    }
 }
