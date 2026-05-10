@@ -4,3 +4,7 @@
 # Plain text (Windows)
 *.txt    diff=astextplain eol=crlf
 *.ini    diff=astextplain eol=crlf
+
+# Test fixture: keep LF so the CRLF test in src/ini.zig stays meaningful
+# (the parser handles both; the fixture exercises the LF path explicitly).
+rdpwrap-cli/src/testdata/*.ini eol=lf
