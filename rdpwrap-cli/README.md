@@ -17,13 +17,14 @@ rationale and the manual procedure this replaces.
 | Phase | Module | State |
 |---|---|---|
 | 1.1 | `rdpwrap-cli install` / `uninstall` | done |
-| 1.2 | `rdpwrap-cli status`                 | stub |
+| 1.2 | `rdpwrap-cli status` — termsrv version, ServiceDll, INI coverage | done |
 | 2a  | INI parser (`src/ini.zig`)            | done |
 | 2b  | PE reader + patcher (`src/{pe,patcher}.zig`) | done |
 | 2c  | DLL skeleton (`src/dll_*.zig`) — DllMain + exports + forwarding | done |
 | 2d  | DLL patching pipeline (read INI, detect version, apply byte patches) | done |
-| 2e  | Hook trampoline pipeline + exported `New_CSLQuery_Initialize` | **this** |
-| 3   | PDB-based offset finder + INI freshness | next |
+| 2e  | Hook trampoline pipeline + exported `New_CSLQuery_Initialize` | done |
+| 3.1 | `rdpwrap-cli update` — fetch fresh INI from community sources over HTTPS | done |
+| 3.2 | PDB-based offset finder (when community INIs lag a Microsoft update) | next |
 | 4   | ARM64, signing, native firewall/Defender APIs | future |
 
 ## Build

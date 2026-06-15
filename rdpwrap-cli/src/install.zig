@@ -85,6 +85,16 @@ pub fn run(ctx: Context, raw: []const []const u8) !void {
         for (dependents) |d| log.step(ctx, "  - {s}", .{d});
     }
 
+    // ControlService(STOP) on TermService fails with
+    // ERROR_DEPENDENT_SERVICES_RUNNING unless we stop the running dependents
+    // first. PowerShell's `Stop-Service -Force` handles this implicitly; the
+    // raw Win32 API doesn't.
+    for (dependents) |d| {
+        log.step(ctx, "stopping dependent: {s}", .{d});
+        svc.stop(ctx.arena, d) catch |e|
+            log.warn(ctx, "  {s} stop failed: {s}", .{ d, @errorName(e) });
+    }
+
     log.step(ctx, "stopping TermService", .{});
     svc.stop(ctx.arena, TERM_SERVICE) catch |e| {
         log.err(ctx, "stop {s} failed: {s}", .{ TERM_SERVICE, @errorName(e) });

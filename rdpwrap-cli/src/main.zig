@@ -81,9 +81,12 @@ fn printUsage(w: *Io.Writer) !void {
         \\USAGE
         \\  rdpwrap-cli install --dll <path> --ini <path> [--no-firewall]
         \\  rdpwrap-cli uninstall [--keep-firewall]
-        \\  rdpwrap-cli update                              (Phase 3)
+        \\  rdpwrap-cli update [--url <url>] [--from <source>] [--no-restart]
         \\  rdpwrap-cli status                              (Phase 1.2)
         \\  rdpwrap-cli help
+        \\
+        \\Update sources:
+        \\  sebaxakerhtc (default), asmtron
         \\
         \\Defaults:
         \\  install dir = %ProgramFiles%\RDP Wrapper
