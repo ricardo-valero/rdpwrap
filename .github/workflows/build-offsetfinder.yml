@@ -1,4 +1,4 @@
-﻿name: Build RDPWrapOffsetFinder
+name: Build RDPWrapOffsetFinder
 
 # Trigger on:
 #   - PRs targeting main/master that touch the OffsetFinder submodule or Zydis
@@ -84,7 +84,7 @@ jobs:
           Copy-Item $dll ".\Zydis_$arch.dll"
 
       - name: Upload ${{ matrix.platform }} artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: finder-${{ matrix.platform }}
           path: |
