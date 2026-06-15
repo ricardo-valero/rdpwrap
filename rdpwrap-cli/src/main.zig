@@ -7,8 +7,9 @@ const install = @import("install.zig");
 const uninstall_mod = @import("uninstall.zig");
 const update_mod = @import("update.zig");
 const status_mod = @import("status.zig");
+const pdb_fetch_mod = @import("pdb_fetch.zig");
 
-const Verb = enum { install, uninstall, update, status, help };
+const Verb = enum { install, uninstall, update, status, @"pdb-fetch", help };
 
 pub fn main(init: std.process.Init) !void {
     const io = init.io;
@@ -46,6 +47,7 @@ pub fn main(init: std.process.Init) !void {
         .uninstall => try uninstall_mod.run(ctx, rest),
         .update => try update_mod.run(ctx, rest),
         .status => try status_mod.run(ctx),
+        .@"pdb-fetch" => try pdb_fetch_mod.run(ctx, rest),
         .help => try printUsage(ew),
     }
     try ew.flush();
@@ -64,6 +66,7 @@ fn parseVerb(s: []const u8) ?Verb {
         .{ "uninstall", Verb.uninstall },
         .{ "update", Verb.update },
         .{ "status", Verb.status },
+        .{ "pdb-fetch", Verb.@"pdb-fetch" },
         .{ "help", Verb.help },
         .{ "--help", Verb.help },
         .{ "-h", Verb.help },
@@ -81,9 +84,13 @@ fn printUsage(w: *Io.Writer) !void {
         \\USAGE
         \\  rdpwrap-cli install --dll <path> --ini <path> [--no-firewall]
         \\  rdpwrap-cli uninstall [--keep-firewall]
-        \\  rdpwrap-cli update                              (Phase 3)
-        \\  rdpwrap-cli status                              (Phase 1.2)
+        \\  rdpwrap-cli update [--url <url>] [--from <source>] [--no-restart]
+        \\  rdpwrap-cli status
+        \\  rdpwrap-cli pdb-fetch [--out <path>]
         \\  rdpwrap-cli help
+        \\
+        \\Update sources:
+        \\  sebaxakerhtc (default), asmtron
         \\
         \\Defaults:
         \\  install dir = %ProgramFiles%\RDP Wrapper

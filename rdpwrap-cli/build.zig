@@ -10,6 +10,7 @@ pub fn build(b: *std.Build) void {
     const target = b.standardTargetOptions(.{ .default_target = default_target });
     const optimize = b.standardOptimizeOption(.{});
 
+    // ── rdpwrap-cli.exe ──────────────────────────────────────────────────
     const exe = b.addExecutable(.{
         .name = "rdpwrap-cli",
         .root_module = b.createModule(.{
@@ -20,14 +21,26 @@ pub fn build(b: *std.Build) void {
     });
     b.installArtifact(exe);
 
-    // `zig build run -- <args>` runs the binary on the host. Useful for the
-    // `status`/`help` paths that don't require Windows APIs to behave.
     const run = b.addRunArtifact(exe);
     if (b.args) |args| run.addArgs(args);
-
     const run_step = b.step("run", "Run the CLI");
     run_step.dependOn(&run.step);
 
+    // ── rdpwrap.dll ──────────────────────────────────────────────────────
+    // The wrapper DLL svchost loads in place of termsrv.dll. Built for the
+    // same target as the CLI; ships in the same release zip.
+    const dll = b.addLibrary(.{
+        .name = "rdpwrap",
+        .linkage = .dynamic,
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("src/dll_main.zig"),
+            .target = target,
+            .optimize = optimize,
+        }),
+    });
+    b.installArtifact(dll);
+
+    // ── Tests ────────────────────────────────────────────────────────────
     // Tests run on the host (not the cross-compile target) so we can exercise
     // pure-Zig modules like the INI parser, PE reader, and patcher without
     // Wine. Each module is its own test root so a failure in one doesn't mask
