@@ -44,6 +44,16 @@ pub fn run(ctx: Context, raw: []const []const u8) !void {
     const ini_path = try path.join(ctx.arena, &.{ install_dir, "rdpwrap.ini" });
 
     const dependents = svc.enumRunningDependents(ctx.arena, TERM_SERVICE) catch &.{};
+
+    // ControlService(STOP) on TermService fails with
+    // ERROR_DEPENDENT_SERVICES_RUNNING unless we stop the running dependents
+    // first; raw Win32 doesn't cascade like Stop-Service -Force does.
+    for (dependents) |d| {
+        log.step(ctx, "stopping dependent: {s}", .{d});
+        svc.stop(ctx.arena, d) catch |e|
+            log.warn(ctx, "  {s} stop failed: {s}", .{ d, @errorName(e) });
+    }
+
     log.step(ctx, "stopping TermService", .{});
     svc.stop(ctx.arena, TERM_SERVICE) catch |e| {
         log.err(ctx, "stop {s} failed: {s}", .{ TERM_SERVICE, @errorName(e) });
