@@ -21,6 +21,7 @@ const svc = @import("win/service.zig");
 const path = @import("win/path.zig");
 const ver = @import("dll_version.zig");
 const ini_mod = @import("ini.zig");
+const pe = @import("pe.zig");
 
 const TERM_SERVICE = "TermService";
 const SERVICE_DLL_KEY = "SYSTEM\\CurrentControlSet\\Services\\TermService\\Parameters";
@@ -46,6 +47,26 @@ pub fn run(ctx: Context) !void {
 
     const ts_status = svc.queryStatus(ctx.arena, TERM_SERVICE) catch .other;
     log.step(ctx, "  TermService state: {s}", .{@tagName(ts_status)});
+
+    // CodeView debug info from termsrv.dll — what the PDB-based offset
+    // finder (Phase 3.2) will use to fetch matching symbols from Microsoft's
+    // public symbol server. For now we just print the URL so the user can
+    // download the PDB manually if needed.
+    if (readTermsrvDebug(ctx)) |di_opt| {
+        if (di_opt) |di| {
+            log.step(ctx, "  PDB: {s}", .{di.pdb_name});
+            var url_buf: [512]u8 = undefined;
+            if (pe.formatSymbolUrl(&url_buf, di)) |url| {
+                log.step(ctx, "  symbol URL: {s}", .{url});
+            } else |e| {
+                log.warn(ctx, "  symbol URL format failed: {s}", .{@errorName(e)});
+            }
+        } else {
+            log.step(ctx, "  PDB: (no CodeView debug entry)", .{});
+        }
+    } else |e| {
+        log.warn(ctx, "  PDB lookup failed: {s}", .{@errorName(e)});
+    }
 
     // ── registry ─────────────────────────────────────────────────────────
     log.step(ctx, "registry HKLM\\{s}", .{SERVICE_DLL_KEY});
@@ -111,6 +132,26 @@ fn readIniMeta(ctx: Context, ini_path: []const u8, ts_version: []const u8) !IniM
         .updated = updated,
         .has_section = ini.hasSection(ts_version),
     };
+}
+
+fn readTermsrvDebug(ctx: Context) !?pe.DebugInfo {
+    const cwd = std.Io.Dir.cwd();
+    var f = try cwd.openFile(ctx.io, TERMSRV_PATH, .{});
+    defer f.close(ctx.io);
+
+    const st = try f.stat(ctx.io);
+    // termsrv.dll is on the order of a few MB; cap to 32 MB as a safety net.
+    if (st.size > 32 * 1024 * 1024) return error.TermsrvTooLarge;
+    const size_usize: usize = @intCast(st.size);
+    const data = try ctx.arena.alloc(u8, size_usize);
+    var off: u64 = 0;
+    while (off < st.size) {
+        const n = try f.readPositionalAll(ctx.io, data[off..size_usize], off);
+        if (n == 0) break;
+        off += n;
+    }
+
+    return try pe.parseDebugInfo(data);
 }
 
 fn fileExists(ctx: Context, p: []const u8) bool {
