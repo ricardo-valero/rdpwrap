@@ -1,6 +1,6 @@
-// Append-only log to C:\rdpwrap.txt (or whatever the INI's [Main].LogFile
-// resolves to). Best-effort — the DLL must not bring down svchost if logging
-// fails, so every error path is silenced.
+// Append-only log to C:\Windows\Temp\rdpwrap.txt (or whatever the INI's
+// [Main].LogFile resolves to). Best-effort — the DLL must not bring down
+// svchost if logging fails, so every error path is silenced.
 //
 // We can't use any allocator here (DllMain context, before/around svchost
 // service start). Everything is fixed-size buffers on the stack.
@@ -9,11 +9,12 @@ const std = @import("std");
 const c = @import("win/c.zig");
 
 /// Path the log gets written to. Set once at first ServiceMain via `setPath`.
-/// Defaults to `\rdpwrap.txt` (root of the system drive) — same default the
-/// upstream Fusix DLL uses if [Main].LogFile is missing.
+/// Defaults to `\Windows\Temp\rdpwrap.txt`. NetworkService (TermService's
+/// account) can't write to the system drive root, so we use a directory it
+/// reliably has write access to. The INI's [Main].LogFile can override this.
 var path_buf: [260]u16 = init_path: {
     var buf: [260]u16 = undefined;
-    const default = "\\rdpwrap.txt";
+    const default = "\\Windows\\Temp\\rdpwrap.txt";
     var i: usize = 0;
     while (i < default.len) : (i += 1) buf[i] = default[i];
     buf[default.len] = 0;

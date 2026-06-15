@@ -30,10 +30,15 @@ pub const Arch = enum { x86, x64 };
 
 pub const Info = struct {
     arch: Arch,
-    /// Size of the code region from the optional header. Patches must land
-    /// within this many bytes of the module base; anything beyond is a
-    /// malformed offset (or the wrong INI section for this build).
+    /// Size of the code region from the optional header. Byte patches and
+    /// hook trampolines must land within this many bytes of the base —
+    /// anything beyond means the offset is malformed (or the wrong INI
+    /// section for this build).
     size_of_code: u32,
+    /// Total size of the mapped image. Data-style offsets (e.g. the SLInit
+    /// field addresses, which live in .data) are bounded by this, not by
+    /// `size_of_code`.
+    size_of_image: u32,
 };
 
 const DOS_MAGIC: u16 = 0x5A4D; // 'MZ'
@@ -53,8 +58,8 @@ pub fn parse(image: []const u8) Error!Info {
     if (lfanew_signed < 0) return Error.NotPe;
     const pe_off: usize = @intCast(lfanew_signed);
 
-    // Need: 4 (sig) + 20 (file header) + 4 (magic + ... at least magic and SizeOfCode)
-    if (pe_off + 4 + 20 + 8 > image.len) return Error.BufferTooSmall;
+    // Need: 4 (sig) + 20 (file header) + 60 (through SizeOfImage at opt+56)
+    if (pe_off + 4 + 20 + 60 > image.len) return Error.BufferTooSmall;
     if (readU32(image, pe_off) != PE_SIGNATURE) return Error.NotPe;
 
     const opt_off = pe_off + 4 + 20;
@@ -66,9 +71,13 @@ pub fn parse(image: []const u8) Error!Info {
     };
 
     // SizeOfCode is at offset 4 inside the optional header (same in PE32 and PE32+).
+    // SizeOfImage is at offset 56 (same in both — the offset is anchored to the
+    // start of the Windows-specific fields, which differ in length between PE32
+    // and PE32+, but Microsoft kept SizeOfImage aligned at 56 either way).
     const size_of_code = readU32(image, opt_off + 4);
+    const size_of_image = readU32(image, opt_off + 56);
 
-    return .{ .arch = arch, .size_of_code = size_of_code };
+    return .{ .arch = arch, .size_of_code = size_of_code, .size_of_image = size_of_image };
 }
 
 inline fn readU16(buf: []const u8, off: usize) u16 {
@@ -103,6 +112,9 @@ fn synthPe(comptime arch: Arch, size_of_code: u32) [0x100]u8 {
     std.mem.writeInt(u16, buf[0x58..0x5A], magic, .little);
     // SizeOfCode at OptionalHeader + 4 = 0x5C.
     std.mem.writeInt(u32, buf[0x5C..0x60], size_of_code, .little);
+    // SizeOfImage at OptionalHeader + 56 = 0x90. Tests use 8x size_of_code
+    // so they don't have to think about a separate parameter.
+    std.mem.writeInt(u32, buf[0x90..0x94], size_of_code *| 8, .little);
     return buf;
 }
 

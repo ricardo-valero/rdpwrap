@@ -20,9 +20,10 @@ rationale and the manual procedure this replaces.
 | 1.2 | `rdpwrap-cli status`                 | stub |
 | 2a  | INI parser (`src/ini.zig`)            | done |
 | 2b  | PE reader + patcher (`src/{pe,patcher}.zig`) | done |
-| 2c  | DLL skeleton (`src/dll_*.zig`) — DllMain + exports + forwarding | **this** |
-| 2d  | DLL patching pipeline (read INI, detect version, apply patches) | next |
-| 3   | `rdpwrap-cli update` + PDB-based offset finder | future |
+| 2c  | DLL skeleton (`src/dll_*.zig`) — DllMain + exports + forwarding | done |
+| 2d  | DLL patching pipeline (read INI, detect version, apply byte patches) | done |
+| 2e  | Hook trampoline pipeline + exported `New_CSLQuery_Initialize` | **this** |
+| 3   | PDB-based offset finder + INI freshness | next |
 | 4   | ARM64, signing, native firewall/Defender APIs | future |
 
 ## Build

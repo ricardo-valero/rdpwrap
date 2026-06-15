@@ -224,9 +224,11 @@ pub extern "kernel32" fn VirtualProtect(
 // ── File I/O for the rdpwrap.txt log ─────────────────────────────────────
 // https://learn.microsoft.com/en-us/windows/win32/api/fileapi/
 
+pub const GENERIC_READ: DWORD = 0x80000000;
 pub const GENERIC_WRITE: DWORD = 0x40000000;
 pub const FILE_SHARE_READ: DWORD = 0x00000001;
 pub const FILE_SHARE_WRITE: DWORD = 0x00000002;
+pub const OPEN_EXISTING: DWORD = 3;
 pub const OPEN_ALWAYS: DWORD = 4;
 pub const FILE_ATTRIBUTE_NORMAL: DWORD = 0x80;
 pub const FILE_END: DWORD = 2;
@@ -250,6 +252,19 @@ pub extern "kernel32" fn WriteFile(
     lpNumberOfBytesWritten: LPDWORD,
     lpOverlapped: ?*anyopaque,
 ) callconv(.winapi) BOOL;
+
+pub extern "kernel32" fn ReadFile(
+    hFile: HANDLE,
+    lpBuffer: [*]u8,
+    nNumberOfBytesToRead: DWORD,
+    lpNumberOfBytesRead: LPDWORD,
+    lpOverlapped: ?*anyopaque,
+) callconv(.winapi) BOOL;
+
+pub extern "kernel32" fn GetFileSize(
+    hFile: HANDLE,
+    lpFileSizeHigh: ?LPDWORD,
+) callconv(.winapi) DWORD;
 
 pub extern "kernel32" fn SetFilePointer(
     hFile: HANDLE,
