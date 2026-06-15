@@ -16,6 +16,7 @@ const log = @import("log.zig");
 const admin = @import("win/admin.zig");
 const svc = @import("win/service.zig");
 const path = @import("win/path.zig");
+const http = @import("http.zig");
 
 const TERM_SERVICE = "TermService";
 const INI_NAME = "rdpwrap.ini";
@@ -145,27 +146,12 @@ fn resolveUrl(ctx: Context, args: Args) []const u8 {
 }
 
 fn fetch(ctx: Context, url: []const u8) ![]const u8 {
-    var client: std.http.Client = .{
-        .allocator = ctx.gpa,
-        .io = ctx.io,
-    };
-    defer client.deinit();
-
-    const now = std.Io.Timestamp.now(ctx.io, .real);
-    try client.ca_bundle.rescan(ctx.gpa, ctx.io, now);
-
     var alloc_w: std.Io.Writer.Allocating = .init(ctx.arena);
-
-    const result = try client.fetch(.{
-        .location = .{ .url = url },
-        .response_writer = &alloc_w.writer,
-    });
-
-    if (result.status != .ok) {
-        log.err(ctx, "HTTP {d}", .{@intFromEnum(result.status)});
+    const status = try http.fetch(ctx.gpa, ctx.io, url, &alloc_w.writer);
+    if (status != .ok) {
+        log.err(ctx, "HTTP {d}", .{@intFromEnum(status)});
         return error.HttpNotOk;
     }
-
     return alloc_w.written();
 }
 
